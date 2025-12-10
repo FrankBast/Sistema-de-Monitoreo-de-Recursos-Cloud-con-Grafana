@@ -1,0 +1,61 @@
+# Equipo 2 del Proyecto – Sistema de Monitoreo de Recursos Cloud con Grafana (Servicios en la Nube)
+
+El equipo está conformado por cuatro integrantes que realizan el proyecto en el marco del Servicio Social. Cada miembro desempeña un rol técnico específico que contribuye al desarrollo, documentación y monitoreo del sistema.
+
+---
+
+## 👥 Integrantes y Roles
+
+- **Franklin Stuardo Aguirre Menéndez** — **Líder de Proyecto Jr.**
+- **Rickelmy Josepf Cubias Alvarado** — **DevOps / Observabilidad Jr. & Ingeniero Cloud / Infraestructura Jr.**
+- **Walter Leopoldo Melara Benítez** — **QA / Documentador Técnico**
+- **Rene Alfredo Romero López** — **Analista de Métricas Jr.**
+
+---
+
+## 🧩 Descripción de Roles
+
+### **1. Líder de Proyecto Jr.**
+- Coordina y supervisa las actividades del equipo.
+- Administra el cronograma y verifica el cumplimiento de entregables.
+- Facilita la comunicación interna y externa del equipo.
+- Da apoyo técnico cuando sea necesario.
+
+---
+
+### **2. DevOps / Observabilidad Jr.**
+- Configura herramientas de monitoreo (Grafana, Prometheus, CloudWatch u otras).
+- Diseña y mantiene dashboards y paneles visuales.
+- Automatiza procesos básicos mediante scripts o pipelines.
+- Da soporte técnico en la integración entre infraestructura y monitoreo.
+
+---
+
+### **3. Ingeniero Cloud / Infraestructura Jr.**  
+*(Función adicional desempeñada por Rickelmy)*  
+- Gestiona y documenta recursos cloud utilizados en el proyecto.
+- Implementa infraestructura requerida para el monitoreo.
+- Supervisa el funcionamiento estable de servicios en AWS u otras plataformas.
+- Mantiene diagramas y configuraciones de la arquitectura del sistema.
+
+---
+
+### **4. QA / Documentador Técnico**
+- Redacta y mantiene documentación formal del proyecto.
+- Realiza pruebas funcionales y valida entregables técnicos.
+- Lleva control documental (manuales, bitácoras, procedimientos, diagramas).
+- Registra evidencias de pruebas y resultados técnicos.
+
+---
+
+### **5. Analista de Métricas Jr.**
+- Recolecta, interpreta y analiza métricas generadas por el sistema.
+- Identifica anomalías, tendencias y patrones relevantes.
+- Prepara reportes y visualizaciones basadas en datos obtenidos.
+- Apoya en la verificación de dashboards y calidad de métricas.
+
+---
+
+## ✔ Objetivo del Equipo
+Garantizar la correcta implementación, monitoreo y documentación del sistema de observabilidad, cumpliendo los estándares establecidos y los requerimientos del Servicio Social.
+
