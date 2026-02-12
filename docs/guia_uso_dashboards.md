@@ -23,17 +23,12 @@ monitoreados y la detección temprana de incidentes técnicos.
 - **Disco (GB / %)**: espacio disponible y utilizado.
 - **Estado del servicio**: disponibilidad del servicio monitoreado.
 
-### 2.4 Significado de colores y estados
-- 🟢 Verde: funcionamiento normal.
-- 🟡 Amarillo: valores cercanos al umbral definido.
-- 🔴 Rojo: valores críticos o fallo detectado.
-
-### 2.5 Qué hacer ante métricas críticas
+### 2.4 Qué hacer ante métricas críticas
 - **CPU alta**: revisar procesos activos y carga del sistema.
 - **Disco bajo**: validar espacio disponible y liberar recursos.
 - **Servicio caído**: verificar conectividad y estado del servicio.
 
-### 2.6 Evidencia visual
+### 2.5 Evidencia visual
 - Figura 1: Vista técnica – estado normal.
 - Figura 2: Vista técnica – CPU en estado crítico.
 
@@ -67,10 +62,3 @@ decisiones sin necesidad de análisis técnico detallado.
 ### 3.6 Evidencia visual
 - Figura 3: Vista ejecutiva – estado general.
 - Figura 4: Vista ejecutiva – alerta activa.
-
----
-
-## 4. Consideraciones finales
-Ambas vistas se complementan: la vista ejecutiva permite una rápida
-evaluación del estado del sistema, mientras que la vista técnica facilita
-el análisis detallado y la resolución de incidentes.
