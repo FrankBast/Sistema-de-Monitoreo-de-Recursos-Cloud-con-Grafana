@@ -1,4 +1,4 @@
-# Documentación de Dashboards de Monitoreo (Plantilla modificable)
+# Documentación de Dashboards de Monitoreo 
 
 ## 1. Introducción
 Este documento describe los dashboards creados en Grafana, su objetivo,
@@ -74,7 +74,7 @@ Jefaturas y coordinación.
 
 ## 6. Evidencia visual
 Las capturas de los dashboards se encuentran en:
-`/docs/screenshots/`
+`Screenshots`
 
 - Dashboard vista técnica – estado normal
 - Dashboard vista ejecutiva – alerta activa
