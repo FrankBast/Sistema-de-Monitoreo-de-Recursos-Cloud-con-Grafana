@@ -1,4 +1,4 @@
-# Pruebas de Monitoreo - Matriz (Plantilla)
+# Pruebas de Monitoreo - Matriz 
 
 | ID  | Escenario | Pasos (instrucciones) | Resultado esperado | Resultado real | Captura (archivo) | Ajuste aplicado | Commit / Versión |
 |-----|-----------|------------------------|--------------------|----------------|-------------------|-----------------|------------------|
