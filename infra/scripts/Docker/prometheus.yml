@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  # Job de Auto-Descubrimiento
+  - job_name: 'aws-infrastructure'
+    file_sd_configs:
+      - files:
+        - '/etc/prometheus/targets.json'
