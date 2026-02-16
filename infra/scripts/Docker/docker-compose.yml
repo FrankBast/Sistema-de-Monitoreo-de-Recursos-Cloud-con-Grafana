@@ -1,1 +1,65 @@
+##version: '3.8'
 
+services:
+  # 1. CEREBRO: Prometheus
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: prometheus_core
+    restart: unless-stopped
+    user: "65534:65534"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      # Aquí está la magia: Montamos el archivo que Terraform genera
+      - ./config/targets.json:/etc/prometheus/targets.json
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+    networks:
+      - ansd_net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 1024M
+
+  # 2. VISUALIZACIÓN: Grafana
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: grafana_ui
+    restart: unless-stopped
+    user: "472:472"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000" # Solo accesible via Túnel o Localhost
+    networks:
+      - ansd_net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+  # 3. CONECTIVIDAD: Cloudflared (Salida del Servidor Central)
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: tunnel_local
+    restart: unless-stopped
+    # Lee el token local para conectar este servidor a la red Zero Trust
+    command: tunnel --no-autoupdate run --token ${LOCAL_TUNNEL_TOKEN}
+    networks:
+      - ansd_net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.10'
+          memory: 128M
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  ansd_net:
+    driver: bridge
