@@ -1,1 +1,6 @@
+Estructura de archivos:
 
+        main.tf            # Orquestador: Llama a los módulos y crea targets.json
+│       ├── terraform.tfvars   # Credenciales, IPs públicas de admin y tokens
+│       ├── variables.tf       # Variables específicas del entorno dev
+│       └── targets.json       # (AUTO-GENERADO) Archivo para Prometheus
