@@ -1,0 +1,45 @@
+#!/bin/bash
+# ==============================================================================
+# 1. PORTAL (Frontend Nginx + Node Exporter)
+# ==============================================================================
+cat <<'EOF' > portal.sh.tftpl
+exec > >(tee /var/log/user-data.log|logger -t user-data -s) 2>&1
+echo ">>> CONFIGURANDO PORTAL + MONITOREO <<<"
+
+# Instalacion Base
+sudo apt update -y
+sudo apt install -y ca-certificates curl gnupg lsb-release
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+sudo mkdir -p /opt/ansd/app
+sudo ip route add 192.168.1.0/24 via 10.0.1.40
+
+# Pagina de prueba
+echo "<h1>Portal ANSD - Monitoreado</h1>" > /opt/ansd/app/index.html
+
+# Docker Compose
+cat <<EOC > /opt/ansd/app/docker-compose.yml
+services:
+  # Servicio Principal
+  web:
+    image: nginx:alpine
+    container_name: ansd-portal
+    restart: always
+    ports: ["80:80"]
+    volumes: ["./index.html:/usr/share/nginx/html/index.html"]
+
+  # Agente de Monitoreo
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: monitoring
+    restart: always
+    ports: ["9100:9100"]
+EOC
+
+# Permisos y Arranque
+sudo chown -R ubuntu:ubuntu /opt/ansd
+cd /opt/ansd/app && docker compose up -d
+EOF
