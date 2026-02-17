@@ -1,1 +1,12 @@
+# ==============================================================================
+# CONFIGURACIÓN DEL BACKEND (ESTADO) - ENTORNO DEV
+# ==============================================================================
 
+terraform {
+  # Para el entorno de desarrollo y simulaciones, usamos el backend local.
+  # El archivo 'terraform.tfstate' se guardará en esta misma carpeta.
+  
+  backend "local" {
+    path = "terraform.tfstate"
+  }
+}
