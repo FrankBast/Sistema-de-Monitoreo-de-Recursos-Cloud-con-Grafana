@@ -1,1 +1,12 @@
+# ==============================================================================
+# CONFIGURACIÓN DEL BACKEND (ESTADO) - ENTORNO PROD - COMO
+# ==============================================================================
 
+terraform {
+  backend "s3" {
+    bucket         = "ansd-terraform-state"
+    key            = "environments/prod/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "terraform-lock" # Evita que dos personas apliquen cambios a la vez
+  }
+}
