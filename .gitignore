@@ -1,0 +1,39 @@
+# ==============================================================================
+# GITIGNORE - PROYECTO ANSD (NUBE HÍBRIDA)
+# ==============================================================================
+
+# --- TERRAFORM ---
+# Ignorar la carpeta de trabajo (binarios de providers y módulos descargados)
+.terraform/
+
+# Ignorar archivos de estado (contienen información sensible de la infraestructura)
+*.tfstate
+*.tfstate.*
+
+# Ignorar el lock de dependencias (opcional, pero recomendado para este lab)
+.terraform.lock.hcl
+
+# --- VARIABLES Y SECRETOS ---
+# Ignorar archivos de asignación de variables con datos reales
+*.tfvars
+*.tfvars.json
+
+# Ignorar archivos de entorno
+.env
+
+# --- SEGURIDAD Y LLAVES (CARPETA SECRET/) ---
+# Bloqueo total de la carpeta de secretos
+secret/
+*.pem
+*.pub
+*.key
+
+# --- SCRIPTS Y LOGS ---
+# Ignorar logs de ejecución y errores
+*.log
+ansd-bootstrap.log
+
+# --- SISTEMA OPERATIVO ---
+.DS_Store
+Thumbs.db
+.cache/
