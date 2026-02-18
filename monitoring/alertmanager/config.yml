@@ -1,0 +1,57 @@
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: '${SMTP_SMARTHOST}'
+  smtp_from: '${EMAIL_FROM}'
+  smtp_auth_username: '${SMTP_USER}'
+  smtp_auth_password: '${SMTP_PASSWORD}'
+  smtp_require_tls: true
+
+route:
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  # Ruta por defecto: Equipo T  cnico (Recibe todo)
+  receiver: 'tech-team'
+
+  routes:
+    # 1. Ruta Ejecutiva: Solo alertas cr  ticas de negocio
+    - match:
+        audience: 'executive'
+        severity: 'critical'
+      receiver: 'executive-team'
+      continue: true # IMPORTANTE: Sigue evaluando para enviar tambi  n a t  cnicos
+
+    # 2. Ruta T  cnica Expl  cita
+    - match:
+        audience: 'technical'
+      receiver: 'tech-team'
+
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: '${SMTP_SMARTHOST}'
+  smtp_from: '${EMAIL_FROM}'
+  smtp_auth_username: '${SMTP_USER}'
+  smtp_auth_password: '${SMTP_PASSWORD}'
+  smtp_require_tls: true
+
+route:
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  # Ruta por defecto: Equipo T  cnico (Recibe todo)
+  receiver: 'tech-team'
+
+  routes:
+    # 1. Ruta Ejecutiva: Solo alertas cr  ticas de negocio
+    - match:
+        audience: 'executive'
+        severity: 'critical'
+      receiver: 'executive-team'
+      continue: true # IMPORTANTE: Sigue evaluando para enviar tambi  n a t  cnicos
+
+    # 2. Ruta T  cnica Expl  cita
+    - match:
+        audience: 'technical'
+      receiver: 'tech-team'
