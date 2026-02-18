@@ -1,0 +1,18 @@
+[
+  {
+    "labels": { "job": "node", "env": "dev", "role": "frontend" },
+    "targets": ["IP_DEL_PORTAL:9100"]
+  },
+  {
+    "labels": { "job": "node", "env": "dev", "role": "backend" },
+    "targets": ["IP_DE_API:9100"]
+  },
+  {
+    "labels": { "job": "node", "env": "dev", "role": "database" },
+    "targets": ["IP_DE_DB:9100"]
+  },
+  {
+    "labels": { "job": "node", "env": "dev", "role": "gateway" },
+    "targets": ["IP_DEL_TUNNEL:9100"]
+  }
+]
