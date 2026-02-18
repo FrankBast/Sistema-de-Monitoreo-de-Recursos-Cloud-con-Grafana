@@ -1,0 +1,135 @@
+services:
+  # ---------------------------------------------------------------------------
+  # PROMETHEUS: N  cleo de recolecci  n
+  # ---------------------------------------------------------------------------
+  prometheus:
+    build:
+      context: ./prometheus
+      args:
+        - VER=${PROMETHEUS_VER}
+    container_name: ansd-prometheus
+    restart: unless-stopped
+    ports:
+      - "192.168.1.150:9090:9090" # UI Expuesta localmente
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus/targets.json:/etc/prometheus/targets.json:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.80'
+          memory: 1G
+    networks:
+      - ansd-net
+
+  # ---------------------------------------------------------------------------
+  # ALERTMANAGER: Enrutador de notificaciones
+  # ---------------------------------------------------------------------------
+    alertmanager:
+    build:
+      context: ./alertmanager
+      args:
+        - VER=${ALERTMANAGER_VER}
+    container_name: ansd-alertmanager
+    restart: unless-stopped
+    ports:
+      - "192.168.1.150:9093:9093"
+    environment:
+      # Pasamos variables para sustituci  n en config.yml (feature nativa de Alertmanager)
+      - SMTP_SMARTHOST=${SMTP_SMARTHOST}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - EMAIL_TECH=${EMAIL_TECH}
+      - EMAIL_EXEC=${EMAIL_EXEC}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID_TECH=${TELEGRAM_CHAT_ID_TECH}
+      - TELEGRAM_CHAT_ID_EXEC=${TELEGRAM_CHAT_ID_EXEC}
+    deploy:
+      resources:
+        limits:
+          cpus: '0.20'
+          memory: 256M
+    networks:
+      - ansd-net
+
+  # ---------------------------------------------------------------------------
+  # BLACKBOX EXPORTER: Monitoreo externo
+  # ---------------------------------------------------------------------------
+  blackbox:
+    build:
+      context: ./blackbox
+      args:
+        - VER=${BLACKBOX_VER}
+    container_name: ansd-blackbox
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.10'
+          memory: 128M
+    networks:
+      - ansd-net
+
+  # ---------------------------------------------------------------------------
+  # NODE EXPORTER: Monitoreo del host
+  # ---------------------------------------------------------------------------
+  node-exporter:
+    build:
+      context: ./node-exporter
+      args:
+        - VER=${NODE_EXPORTER_VER}
+    container_name: ansd-node-host
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro,rslave
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.10'
+          memory: 128M
+    networks:
+      - ansd-net
+
+  # ---------------------------------------------------------------------------
+  # NODE EXPORTER: Monitoreo del host
+  # ---------------------------------------------------------------------------
+  node-exporter:
+    build:
+      context: ./node-exporter
+      args:
+        - VER=${NODE_EXPORTER_VER}
+    container_name: ansd-node-host
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro,rslave
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.10'
+          memory: 128M
+    networks:
+      - ansd-net
+
+networks:
+  ansd-net:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
