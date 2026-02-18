@@ -1,0 +1,9 @@
+groups:
+- name: Infraestructura
+  rules:
+  - alert: InstanciaCaida
+    expr: up == 0
+    for: 1m
+    labels:
+      severity: critical
+      audience: technical

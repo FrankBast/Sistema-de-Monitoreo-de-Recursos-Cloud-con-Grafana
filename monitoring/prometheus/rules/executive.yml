@@ -1,0 +1,9 @@
+groups:
+- name: Negocio
+  rules:
+  - alert: CaidaPortalCiudadano
+    expr: probe_success{job="ansd-portals"} == 0
+    for: 2m
+    labels:
+      severity: critical
+      audience: executive
