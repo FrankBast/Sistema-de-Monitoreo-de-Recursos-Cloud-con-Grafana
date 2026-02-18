@@ -1,0 +1,123 @@
+#!/bin/bash
+# ==============================================================================
+# ANSD COMMON BOOTSTRAP (v3.0 - Production Ready)
+# Propósito: Configuración base para TODOS los nodos (Docker + DNS + Rutas)
+# Sistema Operativo: Ubuntu 22.04 LTS
+# ==============================================================================
+
+# Detener el script si hay errores críticos
+set -e
+
+# Variables de Red (Ajustadas a tu topología)
+TARGET_NET="192.168.1.0/24"   # Tu red On-Premise (Oficina/Casa)
+GATEWAY_IP="10.0.1.40"        # IP del nodo 'tunnel' en AWS
+MY_IP=$(hostname -I | awk '{print $1}')
+LOG_FILE="/var/log/ansd-bootstrap.log"
+
+# Función de log para depuración
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a $LOG_FILE
+}
+
+log ">>> INICIANDO BOOTSTRAP ANSD EN $MY_IP <<<"
+
+# ------------------------------------------------------------------------------
+# 1. INSTALACIÓN DE DOCKER Y HERRAMIENTAS BASE
+# ------------------------------------------------------------------------------
+log "[1/3] Instalando Docker y dependencias..."
+export DEBIAN_FRONTEND=noninteractive
+
+apt-get update -y
+apt-get install -y ca-certificates curl gnupg lsb-release net-tools iputils-ping htop
+
+# Agregar llave GPG oficial de Docker
+mkdir -p /etc/apt/keyrings
+if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+fi
+
+# Configurar repositorio estable
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+apt-get update -y
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+# Configurar permisos para el usuario personalizado
+if id "${custom_user}" &>/dev/null; then
+    usermod -aG docker ${custom_user}
+    log "Usuario ${custom_user} agregado al grupo docker."
+else
+    log "WARN: El usuario ${custom_user} no existe. Saltando asignación de grupo."
+fi
+
+# ------------------------------------------------------------------------------
+# 2. CONFIGURACIÓN DE RESOLUCIÓN DE NOMBRES INTERNA (/etc/hosts)
+# ------------------------------------------------------------------------------
+log "[2/3] Configurando resolución de nombres interna..."
+
+# Limpiar entradas previas para evitar duplicados si se re-ejecuta
+sed -i '/# ANSD-START/,/# ANSD-END/d' /etc/hosts
+
+# Inyectar la matriz de nodos definida en Terraform
+cat <<EOF >> /etc/hosts
+# ANSD-START - Generado por Terraform
+%{ for name, config in node_matrix ~}
+${config.ip} ${name}
+%{ endfor ~}
+# ANSD-END
+EOF
+
+log "Archivo /etc/hosts actualizado. Ahora puedes hacer 'ping portal' o 'ping db'."
+
+# ------------------------------------------------------------------------------
+# 3. CONFIGURACIÓN AVANZADA DE RED (NETPLAN: Rutas + DNS)
+# ------------------------------------------------------------------------------
+log "[3/3] Configurando Netplan (Rutas estáticas y DNS)..."
+
+# Identificar la interfaz de red principal (usualmente eth0 en t2.micro)
+IFACE=$(ip route | grep default | awk '{print $5}' | head -n1)
+
+# Lógica: Si NO soy el Gateway, necesito una ruta HACIA el Gateway
+if [ "$MY_IP" != "$GATEWAY_IP" ]; then
+    
+    # Creamos configuración persistente de Netplan
+    # Esto define:
+    # A) Servidores DNS personalizados (inyectados desde Terraform)
+    # B) Ruta estática hacia 192.168.1.0/24 vía 10.0.1.40
+    cat <<EOF > /etc/netplan/99-ansd-config.yaml
+network:
+  version: 2
+  ethernets:
+    $IFACE:
+      dhcp4: true
+      nameservers:
+        addresses:
+        %{ for dns in dns_servers ~}
+  - ${dns}
+        %{ endfor ~}
+      routes:
+        - to: $TARGET_NET
+          via: $GATEWAY_IP
+          on-link: true
+EOF
+
+    # Aplicar cambios con seguridad
+    chmod 600 /etc/netplan/99-ansd-config.yaml
+    netplan apply
+    log "Ruta estática hacia $TARGET_NET configurada vía $GATEWAY_IP."
+    log "DNS personalizados aplicados."
+
+else
+    log "Soy el nodo GATEWAY ($GATEWAY_IP). Saltando configuración de ruta estática."
+    
+    # Habilitar IP Forwarding (Crucial para que funcione como Router)
+    if ! grep -q "net.ipv4.ip_forward=1" /etc/sysctl.conf; then
+        echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+        sysctl -p
+        log "IP Forwarding habilitado en el Kernel."
+    fi
+fi
+
+log ">>> BOOTSTRAP COMPLETADO EXITOSAMENTE <<<"

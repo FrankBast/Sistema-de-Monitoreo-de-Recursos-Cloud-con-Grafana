@@ -1,0 +1,85 @@
+#!/bin/bash
+# ==============================================================================
+# ANSD GATEWAY SETUP (Cloudflare Tunnel + WARP)
+# Propósito: Configurar el nodo 'tunnel' como pasarela de red
+# ==============================================================================
+
+echo ">>> INICIANDO CONFIGURACIÓN DE GATEWAY (TUNNEL) <<<"
+
+# 1. INSTALACIÓN DE CLOUDFLARE TUNNEL (cloudflared)
+# ------------------------------------------------------------------------------
+echo "[1/4] Instalando Cloudflared..."
+curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+dpkg -i cloudflared.deb
+rm cloudflared.deb
+
+# 2. INSTALACIÓN DE CLOUDFLARE WARP (Cliente Zero Trust)
+# ------------------------------------------------------------------------------
+echo "[2/4] Instalando Cloudflare WARP..."
+# La llave GPG ya se añadió en common_bootstrap, pero aseguramos el repo
+curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/cloudflare-client.list
+
+apt-get update
+apt-get install -y cloudflare-warp
+
+# 3. CONFIGURACIÓN DEL TÚNEL (Servicio)
+# ------------------------------------------------------------------------------
+# Si hay un token, instalamos el servicio que conecta esta red a Cloudflare
+if [ -n "${tunnel_token}" ]; then
+    echo "[3/4] Registrando el Túnel..."
+    cloudflared service install ${tunnel_token}
+    systemctl start cloudflared
+    systemctl enable cloudflared
+    echo " - Servicio Cloudflared: ACTIVO"
+else
+    echo " [WARN] No se proporcionó 'tunnel_token'. El túnel no iniciará."
+fi
+
+# 4. CONFIGURACIÓN DE WARP (Cliente de Red)
+# ------------------------------------------------------------------------------
+# Conecta este Gateway a tu organización Zero Trust para ruteo avanzado
+if [ -n "${warp_token}" ]; then
+    echo "[4/4] Registrando Cliente WARP..."
+    
+    # Registro no interactivo con token de organización
+    warp-cli registration new ${warp_token}
+    
+    # Configurar modo Gateway (Proxy + DNS)
+    warp-cli mode warp+doh
+    
+    # Conectar
+    warp-cli connect
+    
+    # Habilitar persistencia
+    warp-cli enable-always-on
+    
+    echo " - Cliente WARP: CONECTADO"
+else
+    echo " [INFO] No se proporcionó 'warp_token'. Saltando configuración WARP."
+fi
+
+# 5. ACTIVAR ENRUTAMIENTO (IP FORWARDING & NAT)
+# ------------------------------------------------------------------------------
+# Esto es CRÍTICO para que el nodo funcione como Router para las otras VMs
+echo "[EXTRA] Configurando IP Forwarding y NAT..."
+
+# A) Habilitar forwarding en el Kernel (Persistente)
+echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+sysctl -p
+
+# B) Configurar NAT (Masquerading) para que el tráfico salga por este nodo
+# Detectamos la interfaz principal (usualmente eth0 o ens5)
+IFACE=$(ip route | grep default | awk '{print $5}')
+
+# Instalamos iptables-persistent para guardar reglas tras reinicio
+echo iptables-persistent iptables-persistent/autosave_v4 boolean true | debconf-set-selections
+echo iptables-persistent iptables-persistent/autosave_v6 boolean true | debconf-set-selections
+apt-get install -y iptables-persistent
+
+# Aplicar regla NAT: "Lo que venga de la red interna y salga por eth0, enmascaralo"
+iptables -t nat -A POSTROUTING -o $IFACE -j MASQUERADE
+netfilter-persistent save
+
+echo ">>> CONFIGURACIÓN DE GATEWAY FINALIZADA <<<"

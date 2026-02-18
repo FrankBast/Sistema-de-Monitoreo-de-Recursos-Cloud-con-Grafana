@@ -1,0 +1,140 @@
+#!/bin/bash
+# ==============================================================================
+# ANSD APPLICATION SETUP (Docker Compose Dinámico)
+# Propósito: Desplegar contenedores específicos según el Rol del nodo
+# ==============================================================================
+
+ROLE="${role}"
+NODE_NAME="${node_name}"
+USER="${custom_user}"
+WORK_DIR="/opt/ansd"
+
+echo ">>> INICIANDO DESPLIEGUE DE APLICACIÓN PARA ROL: $ROLE <<<"
+
+# 1. Preparar Directorio de Trabajo
+# ------------------------------------------------------------------------------
+mkdir -p $WORK_DIR
+chown $USER:$USER $WORK_DIR
+cd $WORK_DIR
+
+# 2. Generar docker-compose.yml dinámicamente
+# ------------------------------------------------------------------------------
+# Empezamos escribiendo la cabecera común y el servicio de monitoreo
+cat <<EOF > docker-compose.yml
+version: '3.8'
+
+services:
+  # --- OBSERVABILIDAD (Común para todos) ---
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: ansd-exporter-$NODE_NAME
+    restart: always
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command: 
+      - '--path.procfs=/host/proc' 
+      - '--path.sysfs=/host/sys'
+      - --collector.filesystem.ignored-mount-points
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+    ports:
+      - "9100:9100"
+    networks:
+      - ansd-net
+
+  # --- SERVICIO ESPECÍFICO DEL ROL ---
+EOF
+
+# Agregamos el servicio específico según el rol
+case "$ROLE" in
+  "frontend")
+    echo "Configurando Nginx para el Portal Web..."
+    # Creamos un index.html personalizado para verificar que funciona
+    mkdir -p html
+    cat <<HTML > html/index.html
+<!DOCTYPE html>
+<html>
+<head><title>ANSD Portal - $NODE_NAME</title></head>
+<body style="background-color: #f0f0f0; font-family: sans-serif; text-align: center; padding: 50px;">
+    <h1>Bienvenido al Portal ANSD</h1>
+    <p>Este nodo es: <strong>$NODE_NAME</strong> ($ROLE)</p>
+    <p>Estado: 🟢 Operativo</p>
+</body>
+</html>
+HTML
+    
+    # Añadimos el bloque al docker-compose
+    cat <<EOF >> docker-compose.yml
+  web-portal:
+    image: nginx:alpine
+    container_name: ansd-portal
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./html:/usr/share/nginx/html:ro
+    networks:
+      - ansd-net
+EOF
+    ;;
+
+  "backend")
+    echo "Configurando API Simulada (JSON)..."
+    # Usamos una imagen ligera que devuelve información de red (ideal para debug)
+    cat <<EOF >> docker-compose.yml
+  api-service:
+    image: traefik/whoami
+    container_name: ansd-api
+    restart: always
+    ports:
+      - "80:80"
+    networks:
+      - ansd-net
+EOF
+    ;;
+
+  "database")
+    echo "Configurando Base de Datos PostgreSQL..."
+    cat <<EOF >> docker-compose.yml
+  db-service:
+    image: postgres:15-alpine
+    container_name: ansd-db
+    restart: always
+    environment:
+      POSTGRES_USER: ansd_user
+      POSTGRES_PASSWORD: ansd_secret_password
+      POSTGRES_DB: ansd_main_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - ansd-net
+EOF
+    ;;
+
+  *)
+    echo "Rol desconocido: $ROLE. Solo se desplegará Node Exporter."
+    ;;
+esac
+
+# 3. Cerrar el archivo docker-compose.yml (Redes y Volúmenes)
+# ------------------------------------------------------------------------------
+cat <<EOF >> docker-compose.yml
+
+networks:
+  ansd-net:
+    driver: bridge
+
+volumes:
+  db-data:
+EOF
+
+# 4. Levantar los Servicios
+# ------------------------------------------------------------------------------
+echo "Levantando contenedores..."
+docker compose up -d
+
+echo ">>> DESPLIEGUE FINALIZADO. ESTADO: <<<"
+docker compose ps
